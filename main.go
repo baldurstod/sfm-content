@@ -17,6 +17,9 @@ func main() {
 		log.Fatal("Error while reading configuration", err)
 	}
 
+	setApiKey(config.ApiKey)
+	openPostgre(config.DataSource)
+
 	startServer(*config)
 }
 

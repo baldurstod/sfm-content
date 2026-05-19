@@ -93,3 +93,40 @@ func insertItem(item map[string]any) error {
 
 	return nil
 }
+
+func getItems() ([]WorkshopItemSummary, error) {
+	if db == nil {
+		return nil, errors.New("database is not initialized. Did you forgot to call openPostgre ?")
+	}
+
+	res, err := db.Query(`SELECT publishedfileid, title, preview_url FROM items LIMIT(1000);`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query in getItems: <%w>", err)
+	}
+	defer res.Close()
+
+	result := []WorkshopItemSummary{}
+	for {
+		if ok := res.Next(); !ok {
+			// Check if we have an error
+			if err := res.Err(); err != nil {
+				return nil, fmt.Errorf("failed to get next row in getItems: <%w>", err)
+			}
+			// If no error, exit the loop
+			break
+		}
+
+		var publishedfileid uint64
+		var title string
+		var fileUrl string
+
+		err = res.Scan(&publishedfileid, &title, &fileUrl)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row in getItems: <%w>", err)
+		}
+
+		result = append(result, WorkshopItemSummary{publishedfileid, title, fileUrl})
+	}
+
+	return result, nil
+}

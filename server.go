@@ -33,5 +33,7 @@ func initEngine(config Config) *gin.Engine {
 		MaxAge:          12 * time.Hour,
 	}))
 
+	r.POST("/api", apiHandler)
+
 	return r
 }

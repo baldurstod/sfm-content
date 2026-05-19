@@ -20,3 +20,9 @@ type WorkshopTag struct {
 	DisplayName string `json:"display_name" mapstructure:"display_name"`
 	Tag         string `json:"tag" mapstructure:"tag"`
 }
+
+type WorkshopItemSummary struct {
+	Publishedfileid uint64 `json:"publishedfileid"`
+	Title           string `json:"title"`
+	PreviewUrl      string `json:"preview_url"`
+}
