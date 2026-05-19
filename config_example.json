@@ -1,0 +1,13 @@
+{
+	"http": {
+		"port": 0,
+		"https_key_file": "./var/key.pem",
+		"https_cert_file": "./var/cert.pem"
+	},
+	"database": {
+		"datasource":"postgres://user:pass@host/db"
+	},
+	"steam": {
+		"api_key": ""
+	}
+}
