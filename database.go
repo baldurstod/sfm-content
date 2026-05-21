@@ -130,3 +130,16 @@ func getItems() ([]WorkshopItemSummary, error) {
 
 	return result, nil
 }
+
+func getItemUrl(id uint64) (string, error) {
+	row := db.QueryRow(`SELECT file_url FROM items WHERE publishedfileid = $1;`, id)
+
+	file_url := ""
+
+	err := row.Scan(&file_url)
+	if err != nil {
+		return "", fmt.Errorf("failed to scan row in getItems: <%w>", err)
+	}
+
+	return file_url, nil
+}

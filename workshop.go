@@ -192,13 +192,13 @@ func workshopGetDetails(items []string) (map[string]any, error) {
 }
 
 func getApi(u *url.URL) (map[string]any, error) {
-	resp, err := getPage(u)
+	resp, err := getPage(u.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get api response in getApi: <%w>", err)
 	}
 	defer resp.Body.Close()
 
-	response := map[string]interface{}{}
+	response := map[string]any{}
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode json in getApi: <%w>", err)
@@ -207,11 +207,11 @@ func getApi(u *url.URL) (map[string]any, error) {
 	return response, nil
 }
 
-func getPage(u *url.URL) (*http.Response, error) {
+func getPage(url string) (*http.Response, error) {
 	var resp *http.Response
 	for range retries {
 
-		req, err := http.NewRequest("GET", u.String(), nil)
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
