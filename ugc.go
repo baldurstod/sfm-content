@@ -38,6 +38,13 @@ func ugcHandler(c *gin.Context) {
 }
 
 func ugcManifestHandler(c *gin.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			c.JSON(http.StatusInternalServerError, nil)
+			log.Println(err, string(debug.Stack()))
+		}
+	}()
+
 	id := c.Param("id")
 
 	path := getManifestPath(id)
@@ -57,12 +64,14 @@ func ugcManifestHandler(c *gin.Context) {
 		if err != nil {
 			log.Println("failed to download file for item "+id, err)
 			c.String(http.StatusInternalServerError, "")
+			return
 		}
 
 		generateItemManifest(id)
 		if err != nil {
 			log.Println("failed to generate manifest for item "+id, err)
 			c.String(http.StatusInternalServerError, "")
+			return
 		}
 	}
 
@@ -70,6 +79,7 @@ func ugcManifestHandler(c *gin.Context) {
 	if err != nil {
 		log.Println("failed to read manifest for item "+id, err)
 		c.String(http.StatusInternalServerError, "")
+		return
 	}
 
 	c.Data(http.StatusOK, "application/json", content)
@@ -118,6 +128,7 @@ func ugcFileHandler(c *gin.Context) {
 	if err != nil {
 		log.Println("failed to read path +"+path+" for item "+id, err)
 		c.String(http.StatusInternalServerError, "")
+		return
 	}
 
 	c.Data(http.StatusOK, "application/octet-stream", content)

@@ -54,6 +54,7 @@ func apiHandler(c *gin.Context) {
 		jsonError(c, apiError)
 	}
 }
+
 func apiGetItemList(c *gin.Context, params map[string]any) apiError {
 	result, err := getItems()
 
