@@ -16,9 +16,15 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+var LockExists = errors.New("lock exists")
+
+const downloadRetries = 10
+const downloadRetryAfter = 10 * time.Second
 
 func ugcHandler(c *gin.Context) {
 	defer func() {
@@ -67,7 +73,7 @@ func ugcManifestHandler(c *gin.Context) {
 			return
 		}
 
-		generateItemManifest(id)
+		err = generateItemManifest(id)
 		if err != nil {
 			log.Println("failed to generate manifest for item "+id, err)
 			c.String(http.StatusInternalServerError, "")
@@ -157,22 +163,60 @@ func getZipPath(id string) string {
 	return getItemPath(id) + id + ".zip"
 }
 
+func getLockPath(id string) string {
+	return getItemPath(id) + "download.lock"
+}
+
 func getFilesPath(id string) string {
 	return path.Join(getItemPath(id), "files")
 }
 
 func downloadFileIfNotExist(id string) error {
-	_, err := os.Stat(getZipPath(id))
+	// This function check if the file exists before trying to download it
+	dl := func() error {
+		_, err := os.Stat(getZipPath(id))
 
-	notExist := errors.Is(err, os.ErrNotExist)
-	if notExist {
-		return downloadFile(id)
+		notExist := errors.Is(err, os.ErrNotExist)
+		if notExist {
+			return downloadFile(id)
+		}
+		return nil
 	}
 
-	return nil
+	for range downloadRetries {
+		err := dl()
+		if err != LockExists {
+			return err
+		}
+
+		//
+		time.Sleep(downloadRetryAfter)
+	}
+
+	return errors.New("failed to download file " + id + " after " + strconv.Itoa(10) + " retries")
 }
 
 func downloadFile(id string) error {
+	// Check if the download lock exists
+	_, err := os.Stat(getLockPath(id))
+	if err == nil {
+		// lock exists, return
+		return LockExists
+	}
+
+	// Create the directory
+	err = os.MkdirAll(getFilesPath(id), 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create folders for item "+id+" with path "+getFilesPath(id)+": <%w>", err)
+	}
+
+	// Create the lock
+	_, err = os.Create(getLockPath(id))
+	if err != nil {
+		return errors.New("failed to create a lock file " + getLockPath(id) + " for item " + id)
+	}
+	defer os.Remove(getLockPath(id))
+
 	i, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return err
@@ -193,11 +237,6 @@ func downloadFile(id string) error {
 	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body for item "+id+": <%w>", err)
-	}
-
-	err = os.MkdirAll(getFilesPath(id), 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create folders for item "+id+" with path "+getFilesPath(id)+": <%w>", err)
 	}
 
 	err = os.WriteFile(getZipPath(id), buf, 0666)
