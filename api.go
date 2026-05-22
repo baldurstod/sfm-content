@@ -5,11 +5,14 @@ import (
 	"errors"
 	"log"
 	"runtime/debug"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 var _ = registerToken()
+
+const ugcUrlPrefix = "https://images.steamusercontent.com/ugc/"
 
 func registerToken() bool {
 	gob.Register(map[string]any{})
@@ -63,11 +66,9 @@ func apiGetItemList(c *gin.Context, params map[string]any) apiError {
 		return CreateApiError(UnexpectedError)
 	}
 
-	/*
-		if params == nil {
-			return CreateApiError(NoParamsError)
-		}
-	*/
+	for i := range result {
+		result[i].PreviewUrl = strings.Replace(result[i].PreviewUrl, ugcUrlPrefix, "/", 1)
+	}
 
 	jsonSuccess(c, map[string]any{"items": result})
 	return nil
