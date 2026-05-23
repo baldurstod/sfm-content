@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 var _ = registerToken()
@@ -59,7 +60,14 @@ func apiHandler(c *gin.Context) {
 }
 
 func apiGetItemList(c *gin.Context, params map[string]any) apiError {
-	result, err := getItems()
+	var itemParams itemParams
+	err := mapstructure.Decode(params, &itemParams)
+	if err != nil {
+		logError(c, err)
+		return CreateApiError(UnexpectedError)
+	}
+
+	result, err := getItems(itemParams)
 
 	if err != nil {
 		logError(c, err)

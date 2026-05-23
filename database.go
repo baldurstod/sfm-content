@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 	_ "github.com/lib/pq"
@@ -94,14 +95,52 @@ func insertItem(item map[string]any) error {
 	return nil
 }
 
-func getItems() ([]WorkshopItemSummary, error) {
+type itemFilter struct {
+	Name string   `json:"name" mapstructure:"name"`
+	Tags []string `json:"tags" mapstructure:"tags"`
+}
+
+type itemSort struct {
+	Field     string `json:"field" mapstructure:"field"`
+	Ascending bool   `json:"ascending" mapstructure:"ascending"`
+}
+
+type itemParams struct {
+	Filter itemFilter `json:"filter" mapstructure:"filter"`
+	Sort   itemSort   `json:"sort" mapstructure:"sort"`
+}
+
+func getItems(params itemParams) ([]WorkshopItemSummary, error) {
 	if db == nil {
 		return nil, errors.New("database is not initialized. Did you forgot to call openPostgre ?")
 	}
 
-	res, err := db.Query(`SELECT publishedfileid, title, preview_url FROM items LIMIT(1000);`)
+	if len(params.Filter.Tags) > 5 {
+		return nil, errors.New("too much tags")
+	}
+
+	values := []any{}
+	valueIndex := 1
+	namePredicate := ""
+	if params.Filter.Name != "" {
+		// title
+		namePredicate = " AND title ILIKE $" + strconv.Itoa(valueIndex)
+		valueIndex++
+		values = append(values, "%"+strings.ReplaceAll(strings.ReplaceAll(params.Filter.Name, "%", `\%`), "_", `\_`)+"%")
+	}
+
+	keys := []string{}
+	for i, v := range params.Filter.Tags {
+		keys = append(keys, " AND $"+strconv.Itoa(i+valueIndex)+"=ANY(tags)")
+		values = append(values, v)
+	}
+
+	tagsPredicate := strings.Join(keys, "")
+
+	query := `SELECT publishedfileid, title, preview_url FROM items WHERE TRUE ` + namePredicate + tagsPredicate + ` ORDER By time_created desc LIMIT(1000);`
+	res, err := db.Query(query, values...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query in getItems: <%w>", err)
+		return nil, fmt.Errorf("failed to execute query "+query+"in getItems: <%w>", err)
 	}
 	defer res.Close()
 
