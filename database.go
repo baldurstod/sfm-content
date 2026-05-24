@@ -15,6 +15,14 @@ import (
 
 var db *sql.DB
 
+var sortFields = map[string]string{
+	"index":         "publishedfileid",
+	"name":          "title",
+	"subscriptions": "subscriptions",
+	"updated":       "time_updated",
+	"created":       "time_created",
+}
+
 func openPostgre(dataSourceName string) {
 	var err error
 	db, err = sql.Open("postgres", dataSourceName)
@@ -120,6 +128,17 @@ func getItems(params itemParams) ([]WorkshopItemSummary, error) {
 	}
 
 	values := []any{}
+
+	sortField, found := sortFields[params.Sort.Field]
+	if !found {
+		sortField = "time_created"
+	}
+
+	var sortDirection = "desc"
+	if params.Sort.Ascending {
+		sortDirection = "asc"
+	}
+
 	valueIndex := 1
 	namePredicate := ""
 	if params.Filter.Name != "" {
@@ -137,7 +156,7 @@ func getItems(params itemParams) ([]WorkshopItemSummary, error) {
 
 	tagsPredicate := strings.Join(keys, "")
 
-	query := `SELECT publishedfileid, title, preview_url FROM items WHERE TRUE ` + namePredicate + tagsPredicate + ` ORDER By time_created desc LIMIT(1000);`
+	query := `SELECT publishedfileid, title, preview_url FROM items WHERE TRUE ` + namePredicate + tagsPredicate + ` AND 'Model'=ANY(tags) ORDER BY ` + sortField + ` ` + sortDirection + ` LIMIT(1000);`
 	res, err := db.Query(query, values...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query "+query+"in getItems: <%w>", err)

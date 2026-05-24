@@ -60,7 +60,7 @@ func apiHandler(c *gin.Context) {
 }
 
 func apiGetItemList(c *gin.Context, params map[string]any) apiError {
-	var itemParams itemParams
+	var itemParams = itemParams{Sort: itemSort{Ascending: true}}
 	err := mapstructure.Decode(params, &itemParams)
 	if err != nil {
 		logError(c, err)

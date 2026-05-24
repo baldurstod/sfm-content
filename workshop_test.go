@@ -37,7 +37,7 @@ func TestGetItems(t *testing.T) {
 	openPostgre(config.DataSource)
 	defer closePostgre()
 
-	result, err := getItems()
+	result, err := getItems(itemParams{})
 	if err != nil {
 		t.Error(err)
 		return
