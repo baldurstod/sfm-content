@@ -12,7 +12,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -143,16 +142,12 @@ func ugcFileHandler(c *gin.Context) {
 }
 
 func getItemPath(id string) string {
-	re := regexp.MustCompile(`(.{2}|.{1})`)
-	x := re.FindAllStringSubmatch(id, -1)
+	// Ensure id is at least 4 char long
+	i := fmt.Sprintf("%04v", id)
+	l := len(i)
 
-	path := "./files"
-	for _, s := range x {
-		path += "/" + s[0]
-	}
-
-	path += "/" + id + "/"
-	return path
+	// We take the last characters, for a better distribution
+	return "./files/" + i[l-4:l-2] + "/" + i[l-2:] + "/" + id + "/"
 }
 
 func getManifestPath(id string) string {
