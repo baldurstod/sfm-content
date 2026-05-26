@@ -79,7 +79,22 @@ func insertItem(item map[string]any) error {
 
 	_, err = db.Exec(`INSERT INTO items (
 	publishedfileid, title, time_created, time_updated, creator, tags, file_size, file_url, preview_url, subscriptions, consumer_appid, maybe_inappropriate_sex, maybe_inappropriate_violence, detail )
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14 )`,
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14 )
+	ON CONFLICT (publishedfileid) DO UPDATE SET
+	title = $2,
+	time_created = $3,
+	time_updated = $4,
+	creator = $5,
+	tags = $6,
+	file_size = $7,
+	file_url = $8,
+	preview_url = $9,
+	subscriptions = $10,
+	consumer_appid = $11,
+	maybe_inappropriate_sex = $12,
+	maybe_inappropriate_violence = $13,
+	detail = $14
+	`,
 		fileId,
 		workshopItem.Title,
 		workshopItem.TimeCreated,
