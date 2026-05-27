@@ -1,6 +1,6 @@
 CREATE TABLE items (
-	id SERIAL PRIMARY KEY,
-	publishedfileid BIGINT NOT NULL,
+	id SERIAL,
+	publishedfileid BIGINT PRIMARY KEY,
 	title TEXT NOT NULL,
 	time_created BIGINT NOT NULL,
 	time_updated BIGINT NOT NULL,
