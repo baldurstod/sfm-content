@@ -171,7 +171,7 @@ func getItems(params itemParams) ([]WorkshopItemSummary, error) {
 
 	tagsPredicate := strings.Join(keys, "")
 
-	query := `SELECT publishedfileid, title, preview_url, time_created, time_updated, subscriptions FROM items WHERE TRUE ` + namePredicate + tagsPredicate + ` AND ('Model'=ANY(tags) OR 'Texture'=ANY(tags)) ORDER BY ` + sortField + ` ` + sortDirection + ` LIMIT(50000);`
+	query := `SELECT publishedfileid, title, preview_url, time_created, time_updated, subscriptions, array_to_json(tags) FROM items WHERE TRUE ` + namePredicate + tagsPredicate + ` AND ('Model'=ANY(tags) OR 'Texture'=ANY(tags)) ORDER BY ` + sortField + ` ` + sortDirection + ` LIMIT(50000);`
 	res, err := db.Query(query, values...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query "+query+"in getItems: <%w>", err)
@@ -195,13 +195,19 @@ func getItems(params itemParams) ([]WorkshopItemSummary, error) {
 		var timeCreated uint64
 		var timeUpdated uint64
 		var subscriptions uint64
+		var tags string
 
-		err = res.Scan(&publishedfileid, &title, &fileUrl, &timeCreated, &timeUpdated, &subscriptions)
+		err = res.Scan(&publishedfileid, &title, &fileUrl, &timeCreated, &timeUpdated, &subscriptions, &tags)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row in getItems: <%w>", err)
 		}
+		var arr []string
+		err = json.Unmarshal([]byte(tags), &arr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal tags: <%w>", err)
+		}
 
-		result = append(result, WorkshopItemSummary{publishedfileid, title, fileUrl, timeCreated, timeUpdated, subscriptions})
+		result = append(result, WorkshopItemSummary{publishedfileid, title, fileUrl, timeCreated, timeUpdated, subscriptions, arr})
 	}
 
 	return result, nil

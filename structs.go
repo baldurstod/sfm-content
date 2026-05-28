@@ -22,10 +22,11 @@ type WorkshopTag struct {
 }
 
 type WorkshopItemSummary struct {
-	Publishedfileid uint64 `json:"publishedfileid"`
-	Title           string `json:"title"`
-	PreviewUrl      string `json:"preview_url"`
-	TimeCreated     uint64 `json:"time_created"`
-	TimeUpdated     uint64 `json:"time_updated"`
-	Subscriptions   uint64 `json:"subscriptions"`
+	Publishedfileid uint64   `json:"publishedfileid"`
+	Title           string   `json:"title"`
+	PreviewUrl      string   `json:"preview_url"`
+	TimeCreated     uint64   `json:"time_created"`
+	TimeUpdated     uint64   `json:"time_updated"`
+	Subscriptions   uint64   `json:"subscriptions"`
+	Tags            []string `json:"tags"`
 }
