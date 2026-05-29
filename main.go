@@ -20,6 +20,8 @@ func main() {
 	setApiKey(config.ApiKey)
 	openPostgre(config.DataSource)
 
+	runWorkshopTasks()
+
 	startServer(*config)
 }
 

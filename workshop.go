@@ -33,7 +33,10 @@ func startWorkshop() {
 func runWorkshopTasks() {
 	go func() {
 		for {
-			refreshItems()
+			err := refreshItems()
+			if err != nil {
+				log.Println("an error occured while refreshing items", err)
+			}
 			time.Sleep(5 * time.Minute)
 		}
 	}()
@@ -102,16 +105,26 @@ func refreshItems() error {
 		}
 
 		items := details["response"].(map[string]any)["publishedfiledetails"].([]any)
+		anyUpdated := false
 		for _, item := range items {
 			i, ok := item.(map[string]any)
 			if !ok {
 				return fmt.Errorf("unexpected item type <%w>", err)
 			}
 
-			err = insertItem(i)
+			updated, err := insertItem(i)
 			if err != nil {
 				return fmt.Errorf("failed to insert item : <%w>", err)
 			}
+
+			if updated {
+				anyUpdated = true
+			}
+		}
+
+		if !anyUpdated {
+			log.Println("no item updated on the entire page, leaving")
+			break
 		}
 
 		page++

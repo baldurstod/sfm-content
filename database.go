@@ -45,15 +45,17 @@ func closePostgre() {
 	}
 }
 
-func insertItem(item map[string]any) error {
+// Insert an item in database
+// Return true if the item was inserted or updated, false if it was up to date or an error occured
+func insertItem(item map[string]any) (bool, error) {
 	if db == nil {
-		return errors.New("database is not initialized. Did you forgot to call openPostgre ?")
+		return false, errors.New("database is not initialized. Did you forgot to call openPostgre ?")
 	}
 
 	var workshopItem WorkshopItem
 	err := mapstructure.Decode(item, &workshopItem)
 	if err != nil {
-		return fmt.Errorf("an error occured while decoding workshop item : <%w>", err)
+		return false, fmt.Errorf("an error occured while decoding workshop item : <%w>", err)
 	}
 
 	var tags = []string{}
@@ -64,17 +66,30 @@ func insertItem(item map[string]any) error {
 
 	j, err := json.Marshal(&item)
 	if err != nil {
-		return fmt.Errorf("failed to marshal json: <%w>", err)
+		return false, fmt.Errorf("failed to marshal json: <%w>", err)
 	}
 
 	fileId, err := strconv.ParseUint(workshopItem.Publishedfileid, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to convert Publishedfileid "+workshopItem.Publishedfileid+": <%w>", err)
+		return false, fmt.Errorf("failed to convert Publishedfileid "+workshopItem.Publishedfileid+": <%w>", err)
 	}
 
 	fileSize, err := strconv.ParseUint(workshopItem.FileSize, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to convert file size "+workshopItem.FileSize+": <%w>", err)
+		return false, fmt.Errorf("failed to convert file size "+workshopItem.FileSize+": <%w>", err)
+	}
+
+	row := db.QueryRow(`SELECT time_updated from items where publishedfileid = $1;`, fileId)
+
+	var timeUpdated uint64
+
+	err = row.Scan(&timeUpdated)
+	if err != nil && err != sql.ErrNoRows {
+		return false, fmt.Errorf("failed to scan row in insertItem: <%w>", err)
+	}
+
+	if err != sql.ErrNoRows && timeUpdated == workshopItem.TimeUpdated {
+		return false, nil
 	}
 
 	_, err = db.Exec(`INSERT INTO items (
@@ -112,10 +127,10 @@ func insertItem(item map[string]any) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to insert workshop item "+workshopItem.Publishedfileid+" : <%w>", err)
+		return false, fmt.Errorf("failed to insert workshop item "+workshopItem.Publishedfileid+" : <%w>", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 type itemFilter struct {

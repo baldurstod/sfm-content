@@ -10,10 +10,8 @@ run: build
 
 prod:
 	go env -w CGO_ENABLED=0
-	@echo 'Bundling sfm_content'
-	rollup -c --environment BUILD:production
 	@echo 'Building go app'
-	go build -o dist/${BINARY_NAME} ./src/server/
+	go build -o dist/${BINARY_NAME} ./
 
 clean:
 	go clean
